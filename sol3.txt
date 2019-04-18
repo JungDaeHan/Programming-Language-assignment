@@ -1,0 +1,127 @@
+datatype pattern = 
+Wildcard 
+| Variable of string 
+| UnitP 
+| ConstP of int 
+| TupleP of pattern list 
+| ConstructorP of string * pattern;
+
+datatype valu = 
+Const of int 
+| Unit 
+| Tuple of valu list 
+| Constructor of string * valu;
+
+type name = string datatype RSP =       
+ROCK     
+| SCISSORS     
+| PAPER ;
+ 
+datatype 'a strategy = Cons of 'a * (unit -> 'a strategy) ;
+
+datatype tournament =       PLAYER of name * (RSP strategy ref)     
+			    | MATCH of tournament * tournament;
+
+
+ fun fold_l e =
+ case e of
+ Wildcard => []
+ | Variable s1 => [s1]
+ | UnitP => []
+ | ConstP i1 => []
+ | ConstructorP (s1,p1) => fold_l(p1)
+ | TupleP l1 => if null l1 then [] else fold_l(hd(l1)) @ fold_l(TupleP (tl(l1)));
+
+fun is_repeat(xs:string list,x:string)=
+ if null xs
+ then true
+ else if x=hd(xs)
+       then false
+       else is_repeat(tl(xs),x);
+
+
+fun List_exists(xs: string list)=
+ if null xs
+ then true
+ else let val bo = is_repeat(tl(xs),hd(xs))
+       in
+               if bo = false
+               then false
+               else List_exists(tl(xs))
+       end;
+
+ fun check_pat(x :pattern) =
+let val e = fold_l(x)
+in
+      if List_exists(e) = true
+      then true
+      else false
+end;
+
+
+
+fun is_some(f,l) =
+ let fun make_option(f,l,all_l) = case l of
+                                     [] => SOME all_l
+                               | x::xs => case f(x) of
+                                             NONE => NONE
+                                            |SOME a => make_option(f,xs,a @ all_l)
+ in
+       make_option(f,l,[])
+ end;
+
+
+ fun match(v: valu, p : pattern)=
+ case (v,p) of
+ (v,Wildcard) => SOME []
+ |(v,Variable s1) => SOME [(s1,v)]
+ |(Unit,UnitP) => SOME []
+ |(Const n1,ConstP n2) => if n1=n2 then SOME [] else NONE
+ |(Tuple vs, TupleP ps) => if List.length vs = List.length ps
+                           then is_some(match,(ListPair.zip(vs,ps)))
+                           else NONE
+ |(Constructor(s1,v1),ConstructorP(s2,p1)) => if s1=s2 then match(v1,p1) else NONE
+ |_ => NONE;
+
+fun onlyOne(one:RSP) = Cons(one, fn() => onlyOne(one)) 
+fun alterTwo(one:RSP, two:RSP) = Cons(one, fn() => alterTwo(two, one)) 
+fun alterThree(one:RSP, two:RSP, three:RSP) = Cons(one, fn() => alterThree(two, three, one)) 
+ 
+val r = onlyOne(ROCK) 
+val s = onlyOne(SCISSORS) 
+val p = onlyOne(PAPER) 
+val rp = alterTwo(ROCK, PAPER) 
+val rs = alterTwo(ROCK, SCISSORS)
+val sp = alterTwo(SCISSORS, PAPER)
+val sr = alterTwo(SCISSORS, ROCK) 
+val ps = alterTwo(PAPER, SCISSORS)
+val pr = alterTwo(PAPER, ROCK) 
+val srp = alterThree(SCISSORS, ROCK, PAPER)
+val spr = alterThree(SCISSORS, PAPER, ROCK)        
+       
+fun next(strategyRef) = 
+    let val Cons(rsp, func) = !strategyRef in 
+        strategyRef := func(); 
+        rsp 
+    end
+
+
+fun who_win(t1,t2) =
+case (t1,t2) of
+(MATCH(t1,t2),MATCH(t3,t4)) => who_win(who_win(t1,t2),who_win(t3,t4))
+|(MATCH(t1,t2),PLAYER(n,re)) => who_win(who_win(t1,t2),PLAYER(n,re))
+|(PLAYER(n,re),MATCH(t1,t2)) => who_win(who_win(t1,t2),PLAYER(n,re))
+|(PLAYER(n1,refs1),PLAYER(n2,refs2)) => let val a = next(refs1) and b = next(refs2)
+                                      in
+                                              if (a=ROCK andalso b=SCISSORS) orelse (a=SCISSORS andalso b=PAPER) orelse (a=PAPER andalso b=ROCK) then PLAYER(n1,refs1)
+                                              else if (a=ROCK andalso b=PAPER) orelse (a=SCISSORS andalso b=ROCK) orelse (a=PAPER andalso b=SCISSORS) then PLAYER(n2,refs2)
+                                              else let val ref(Cons(a,b)) = refs1 and ref(Cons(c,d)) = refs2
+                                                      in
+                                                              who_win(PLAYER(n1,ref(Cons(next(refs1),b))) , PLAYER(n2,ref(Cons(next(refs2),d))))
+                                                      end
+                                      end;
+
+fun whosWinner(t) =
+case t of
+PLAYER(s1,a) => PLAYER(s1,a)
+|MATCH(t1,t2) => who_win(t1,t2);

@@ -1,0 +1,57 @@
+(* Assignment 1 *)
+
+fun merge(xs:int list, ys:int list)=
+if null xs
+then ys
+else if null ys
+then xs
+else
+if hd(xs) >= hd(ys)
+then hd(ys) :: merge(xs,tl(ys))
+else hd(xs) :: merge(tl(xs),ys);
+
+fun reverse(xs:int list)=
+if null xs
+then []
+else reverse((tl)xs) @ [(hd)xs]; 
+
+fun sigma(a:int, b:int, f:int->int)=
+if a=b
+then 0
+else f(a) + sigma(a+1,b,f);
+
+fun How_long(x:int, tmp:int)=
+if x div tmp >= 0 andalso x div tmp < 10
+then tmp
+else How_long(x,tmp*10);
+
+fun make_List(x:int, tmp:int)=
+if tmp=0
+then []
+else [x div tmp] @ make_List(x - tmp*(x div tmp), tmp div 10);
+
+fun digits(x:int)=
+let val tmp = How_long(x,1)
+in make_List(x,tmp)
+end
+;
+
+fun add_List(xs:int list)=
+if null xs
+then 0
+else (hd)xs + add_List((tl)xs);
+
+fun additive(tmp:int, sum:int)=
+if sum>0 andalso sum<10
+then tmp+1
+else additive(tmp+1, add_List(digits(sum)));
+
+fun additivePersistence(x:int)=
+if x>=0 andalso x<10
+then 0
+else additive(0,add_List(digits(x)));
+
+fun digitalRoot(x:int)=
+if x>=0 andalso x<10
+then x
+else digitalRoot(add_List(digits(x)));
