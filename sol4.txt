@@ -1,0 +1,40 @@
+#lang racket
+
+(define (check_bst xs)
+  (define (isBST xs min max)
+ ;   (cond [(null? xs) #t]
+  ;        [(or (< (car xs) min) (> (car xs) max)) #f]
+   ;       [#t (and (isBST (car(cdr xs)) min (- (car xs) 1)) (isBST (cdr(cdr xs)) (+ (car xs) 1) max) )]))
+    (if (null? xs)
+        #t
+        (if (or (< (car xs) min) (> (car xs) max))
+            #f
+            (and (isBST (car(cdr xs)) min (- (car xs) 1)) (isBST (car(cdr(cdr xs))) (+ (car xs) 1) max) ))))
+  (isBST xs -1000 1000))
+
+(define (apply f xs)
+  (if (null? xs)
+      null
+      (cons (f (first xs)) (cons (apply f (car(cdr xs))) (cons (apply f (car(cdr(cdr xs)))) '())))))
+
+(define (order xs)
+  (if (null? xs)
+      '()
+      (append (order (car(cdr xs)))
+              (list (car xs))
+              (order (car(cdr(cdr xs)))))))
+
+(define (list_equals xs ys)
+   (if (and (null? xs) (null? ys))
+      #t
+      (if (or (null? xs) (null? ys))
+          #f
+          (if (= (car xs) (car ys))
+              (list_equals (cdr xs) (cdr ys))
+              #f))))
+
+(define (equals xs ys)
+  (if (list_equals (order xs) (order ys))
+      #t
+      #f))
+
